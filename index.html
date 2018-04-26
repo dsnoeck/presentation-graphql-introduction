@@ -4,9 +4,10 @@
 	<head>
 		<meta charset="utf-8">
 
-		<title>GraphQL with Sangria</title>
+		<title>Introduction to GraphQL </title>
 
 		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Damien Snoeck">
 		<meta name="author" content="Oleg Ilyenko">
 
 		<meta name="apple-mobile-web-app-capable" content="yes" />
@@ -58,7 +59,7 @@
           </p>
 
           <p style="font-size: 70%; opacity: 0.5" class="normal-font">
-            by Oleg Ilyenko / <a href="https://twitter.com/easyangel">@easyangel</a>
+            by Damien Snoeck based on <a href="https://github.com/OlegIlyenko/">OlegIlyenko</a> slides
           </p>
 				</section>
 
@@ -118,8 +119,6 @@
             <li class="fragment fade-in" data-fragment-index="1">Developed by Facebook</li>
             <li class="fragment fade-in" data-fragment-index="2">Used internally since 2012</li>
             <li class="fragment fade-in" data-fragment-index="3">Open source version published in July 2015</li>
-            <li class="fragment fade-in" data-fragment-index="4">Relay released in August 2015</li>
-            <li class="fragment fade-in" data-fragment-index="5">Documentation: <a href="http://graphql.org/" target="_blank">http://graphql.org/</a></li>
           </ul>
         </section>
 
@@ -127,16 +126,10 @@
           <h2>Request/Response structure</h2>
 
           <pre style="float: left; width: 50%"><code data-trim contenteditable class="javascript">
-query MyProduct {
-  product(id: 123) {
+{
+  human(id: "1000") {
     name
-    description
-
-    picture {
-      width
-      height
-      url
-    }
+    height
   }
 }
           </code></pre>
@@ -144,15 +137,9 @@ query MyProduct {
           <pre style="float: left; width: 50%" class="fragment fade-in" data-fragment-index="1"><code data-trim contenteditable class="javascript">
 {
   "data": {
-    "product": {
-      "name": "Delicious Cake",
-      "description": "Just taste it!"
-
-      "picture": {
-        "width": 150,
-        "height": 150,
-        "url": "http://..."
-      }
+    "human": {
+      "name": "Luke Skywalker",
+      "height": 1.72
     }
   }
 }
@@ -163,11 +150,10 @@ query MyProduct {
           <h2>Every field Is a Function</h2>
 
           <pre style="float: left; width: 50%"><code data-trim contenteditable class="javascript">
-query MyProduct {
-  products {
-    picture(size: 300) {
-      width, height, url
-    }
+{
+  human(id: "1000") {
+    name
+    height(unit: FOOT)
   }
 }
           </code></pre>
@@ -175,16 +161,10 @@ query MyProduct {
           <pre style="float: left; width: 50%" class="fragment fade-in" data-fragment-index="1"><code data-trim contenteditable class="javascript">
 {
   "data": {
-    "products": [
-      {
-        "picture": {
-          "width": 300,
-          "height": 300,
-          "url": "http://..."
-        }
-      },
-      ...
-    ]
+    "human": {
+      "name": "Luke Skywalker",
+      "height": 5.6430448
+    }
   }
 }
           </code></pre>
@@ -194,14 +174,12 @@ query MyProduct {
           <h2>Aliases</h2>
 
           <pre style="float: left; width: 50%"><code data-trim contenteditable class="javascript">
-query MyProduct {
-  products {
-    thumb: picture(size: 100) {
-      width
-    }
-    fullSize: picture(size: 500) {
-      width
-    }
+{
+  empireHero: hero(episode: EMPIRE) {
+    name
+  }
+  jediHero: hero(episode: JEDI) {
+    name
   }
 }
           </code></pre>
@@ -209,17 +187,35 @@ query MyProduct {
           <pre style="float: left; width: 50%" class="fragment fade-in" data-fragment-index="1"><code data-trim contenteditable class="javascript">
 {
   "data": {
-    "products": [
-      {
-        "thumb": {
-          "width": 100
-        },
-        "fullSize": {
-          "width": 500
-        }
-      },
-      ...
-    ]
+    "empireHero": {
+      "name": "Luke Skywalker"
+    },
+    "jediHero": {
+      "name": "R2-D2"
+    }
+  }
+}
+          </code></pre>
+        </section>
+
+        <section>
+          <h2>Fragments</h2>
+          <pre>
+          <code data-trim contenteditable class="javascript">
+{
+  leftComparison: hero(episode: "EMPIRE") {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: "JEDI") {
+    ...comparisonFields
+  }
+}
+
+fragment comparisonFields on Character {
+  name
+  appearsIn
+  friends {
+    name
   }
 }
           </code></pre>
@@ -282,6 +278,31 @@ subscription ProductEvents {
   productDeleted { id }
 }
           </code></pre>
+        </section>
+
+
+        <section>
+          <h2>Demo</h2>
+
+          <a href="http://graphql.org/swapi-graphql/">Playground</a>
+        </section>
+
+        <section>
+          <h2>Other great features</h2>
+
+          <ul>
+            <li>Operation name</li>
+            <li>Introspection</li>
+            <li>Other response than JSON</li>
+            <li>Other protocol than HTTP (WebSocket, GRPC)</li>
+          </ul>
+        </section>
+
+
+        <section>
+          <h2>GRPC</h2>
+
+          <a href="https://github.com/google/rejoiner" target="_blank">Rejoiner</a>
         </section>
 
 
@@ -353,14 +374,52 @@ val ProductType = deriveObjectType[Unit, Product]()
           </code></pre>
         </section>
 
+
+        <section>
+          <h2>Example: Spring Boot</h2>
+
+          <pre><code data-trim contenteditable class="java">
+public class Query implements GraphQLQueryResolver {
+    private PostDao postDao;
+    public List &lt;Post&gt; getRecentPosts(int count, int offset) {
+        return postsDao.getRecentPosts(count, offset);
+    }
+}
+          </code></pre>
+        </section>
+
+        <section>
+          <h2>Disadvantages</h2>
+          <ul>
+            <li>Cannot query in indefinite depth</li>
+            <li>Specific response structure (response match query)</li>
+            <li>Hard to cache at network level (Post in single endpoint)</li>
+            <li>Nothing about file upload</li>
+            <li>Unpredictable execution (because of its flexibility)</li>
+            <li>Extra complexity in case of simple REST API</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Competitors</h2>
+
+          <p>
+            <a href="http://www.odata.org/">OData</a> from Microsoft, an OASIS standard REST API used by SAP, IBM and Salesforce.
+          </p>
+
+          <p>
+            <a href="http://www.oracle.com/technetwork/developer-tools/rest-data-services/overview/index.html">ORDS</a> (Oracle REST Data Services) is the Oracle REST service which delivers similar standardization for Oracle-centric applications
+          </p>
+        </section>
+
         <section data-background="#D45CA2" class="first-slide">
           <h1>Thank you!</h1>
           <br>
           <ul class="fragment roll-in" data-fragment-index="2">
-            <li><a href="https://dsnoeck.github.io/presentation-graphql-introduction/" target="_blank">https://dsnoeck.github.io/presentation-graphql-introduction/#/17</a></li>
+            <li><a href="https://dsnoeck.github.io/presentation-graphql-introduction/" target="_blank">https://dsnoeck.github.io/presentation-graphql-introduction</a></li>
             <li><strong>GraphQL:</strong> <a href="http://graphql.org" target="_blank">http://graphql.org</a></li>
             <li><strong>Zero To GraphQL:</strong> <a href="http://bit.ly/zero-to-graphql" target="_blank">http://bit.ly/zero-to-graphql</a></li>
-            <li><strong>Sangria Playground:</strong> <a href="http://try.sangria-graphql.org" target="_blank">http://try.sangria-graphql.org</a></li>
+            <li><strong>Playground:</strong> <a href="http://try.sangria-graphql.org" target="_blank">http://graphql.org/swapi-graphql</a></li>
           </ul>
           <br><br>
           <h2 class="fragment roll-in" data-fragment-index="3" style="opacity: 0.7;">Questions?</h2>
